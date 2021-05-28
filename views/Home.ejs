@@ -6,7 +6,7 @@
     <% if(i.title.length !==0) { %>
         
         <h3><%= i.title %></h3>
-        <p><%= i.body.substring(0,10) +"..." %><a href="/posts/<%= i.title %>">Read More</a></p>
+        <p><%= i.content.substring(0,10) +"..." %><a href="/posts/<%= i.title %>">Read More</a></p>
         <% } %>
     <% }) %>
 

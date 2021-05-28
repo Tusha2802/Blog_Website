@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+const mongoose = require("mongoose");
 const _ = require("lodash");
 
 const homeStartContent = "Something that I have wanted to do for a long time is take a look at the web’s best About Us pages. Why? Because a good About Us page is very hard to come by."
@@ -23,8 +24,30 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
+mongoose.connect("mongodb://localhost:27017/blogDb",{useNewUrlParser: true, useUnifiedTopology: true });
+
+const blogSchema = {
+    title: String,
+    content: String
+}
+
+const Blog = mongoose.model("Blog", blogSchema);
+
 app.get("/", function(req,res){
-    res.render("Home", {homeContent: homeStartContent, allPosts: posts});
+    
+    Blog.find({}, function(err, foundBlogs){
+        if(err){
+            console.log(err);
+        }
+        else{
+            //console.log(foundBlogs);
+            foundBlogs.forEach((i) => {
+                i.title = _.capitalize(i.title);
+            })
+            res.render("Home", {homeContent: homeStartContent, allPosts: foundBlogs});
+        }
+    })
+    
 })
 
 app.get("/about", function(req,res){
@@ -42,9 +65,14 @@ app.get("/compose", function(req,res){
 app.post("/compose", function(req,res){
 
     const data = {
-        title : req.body.postTitle,
-        body : req.body.postBody
+        blogTitle : req.body.postTitle,
+        blogBody : req.body.postBody
     }
+    const b = new Blog({
+        title: _.lowerCase(data.blogTitle),
+        content: data.blogBody 
+    });
+    b.save();
     posts.push(data);
     res.redirect("/");
 })
@@ -52,11 +80,18 @@ app.post("/compose", function(req,res){
 app.get("/posts/:title", function(req,res){
 
     const title = _.lowerCase(req.params.title);
-    posts.forEach((i) => {
-        if(_.lowerCase(i.title) === title){
-            res.render("Posts", {post: i})
-        }
+
+    Blog.findOne({title: title}, function(err, found){
+        if(!err){
+            found.title = _.capitalize(found.title);
+            res.render("Posts", {post: found});
+        }  
     });
+    // posts.forEach((i) => {
+    //     if(_.lowerCase(i.blogTitle) === title){
+    //         res.render("Posts", {post: i})
+    //     }
+    // });
 })
 
 app.listen(3000, function(){
